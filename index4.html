@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Visualizador de PDF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body,
+      html {
+        position: relative;
+        align-items: center;
+        max-width: 600px;
+        margin: 0 auto;
+        font-family: "Source Sans 3", sans-serif;      
+      }
+      .title {
+        float: left;
+        width: 100%;
+        margin: 3px;
+        padding-left: 30px;
+        background-color: #dd4f51;
+        border-radius: 10px;
+      }
+      .title:hover {
+        background-color: #dc585afb;
+      }
+      .title p {
+        font-size: 14px;
+        color: #ecf0f1;
+      }
+      .pdf-container {
+        width: 100%;
+        max-width: 800px; 
+        margin: 0 auto;
+        overflow: hidden;
+      
+      }
+      .pdf-container canvas {
+        width: 100%;
+        height: auto;
+      }
+      .tooltip {
+        position: relative;
+        cursor: pointer;
+      }
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: #dd4f51;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px ;
+        position: absolute;
+        z-index: 1;
+        bottom: 50px;
+        left:530px;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .tooltip .tooltiptext::after {
+        content: "";
+        position: relative;
+        top: 28px;
+        right: 35px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #dd4f51 transparent transparent transparent;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .round-button {
+        position: absolute;
+        bottom: 0px;
+        left: 540px;
+        width: 40px;
+        height: 40px;
+        background-color: #dd4f51;
+        color: #fff;
+        text-align: center;
+        line-height: 40px;
+        border-radius: 50%;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 9999; /* Coloca o botão acima de tudo */
+         animation: shake 3s infinite; /* Adiciona a animação shake */
+      }
+      @keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-3px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(3px);
+  }
+}
+  .swiper-button-next:after {
+    color: #dd4f51;
+    opacity: .8;
+    position: absolute;
+    left: 50px;
+  }
+   .swiper-button-prev:after{
+    color: #dd4f51;
+     position: absolute;
+    right: 50px;
+    opacity: .8;
+   }
+  
+    @media screen and (max-width: 425px) {
+    body {
+      width: 100%;
+      max-width: 800px;
+    }
+    .title {
+      width: 95%;
+      margin: 2px 7px;
+      padding: 3px;
+      text-align: center;
+    }
+    .pdf-container {
+      max-width: 100%;
+    }
+    .pdf-container canvas {
+      max-width: 100%;
+    }
+    .round-button {
+      bottom: 0px;
+      left: 330px;
+      
+    } 
+    .tooltip .tooltiptext {
+      left: 330px;
+      bottom: 50px;
+      width: 90px;
+    }
+    .tooltip .tooltiptext::after {
+        
+        top: 28px;
+        left: 11px;
+  
+      }
+    .swiper-button-next:after,
+    .swiper-button-prev:after {
+      display: none;
+    } 
+    }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/swiper/swiper-bundle.min.css"
+    />
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  </head>
+  <body>
+    <div class="title">
+      <p>
+        Es un gran privilegio ser parte de CARLA y estar en la vanguardia de la
+        computación de alto rendimiento! Descubra más sobre los clusters HPC
+        implementados por Versatus y regístrese para tener la oportunidad de
+        ganar una Alexa en nuestro sorteo. <b>Haga clic en el botón para registrarse</b>
+      </p>
+    </div>
+
+    <div class="pdf-container swiper-container " id="pdf-container">
+      <div class="swiper-wrapper "></div>
+       <div>
+      <div class="swiper-button-prev" ></div>
+      <div class="swiper-button-next"></div>
+      <div class="swiper-pagination"></div>
+    </div>
+    </div>
+   
+       <a target="_blank" href="https://forms.office.com/pages/responsepage.aspx?id=3Uji29Oy5km2Eqjww-tcG-RVGO1-Gp9Oh6qtpE4L8iVUOEFFREpPQjVWN05OWU5PQzdTQ05WUTMzTyQlQCN0PWcu" class="tooltip">
+    <div class="round-button">
+      <span>&#10148;</span>
+    </div>
+    <span class="tooltiptext">¡Inscríbete aquí!</span>
+  </a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.js"></script>
+
+    <script>
+      var pdfUrl = "example.pdf";
+      var pdfContainer = document.getElementById("pdf-container");
+      var pageNumElement = document.getElementById("page-num");
+      var progressElement = document.getElementById("pdf-progress");
+      var currentPage = 1;
+      var pdfDoc = null;
+      var swiper = null;
+
+      function navigateWithSwiper(direction) {
+        if (direction === "prev") {
+          swiper.slidePrev();
+        } else if (direction === "next") {
+          swiper.slideNext();
+        }
+      }
+      pdfjsLib.getDocument(pdfUrl).promise.then(function (doc) {
+        pdfDoc = doc;
+        var swiperContainer = document.querySelector(".swiper-container");
+        var swiperWrapper = document.querySelector(".swiper-wrapper");
+
+        for (var i = 0; i < pdfDoc.numPages; i++) {
+          var slide = document.createElement("div");
+          slide.classList.add("swiper-slide");
+
+          var canvas = document.createElement("canvas");
+          slide.appendChild(canvas);
+
+          swiperWrapper.appendChild(slide);
+        }
+        // Inicializar o Swiper.js
+        swiper = new Swiper(swiperContainer, {
+          pagination: {
+            el: ".swiper-pagination",
+            type: "fraction",
+          },
+          navigation: {
+            nextEl: ".swiper-button-next",
+            prevEl: ".swiper-button-prev",
+          },
+        });
+        swiper.on("slideChange", function () {
+          renderPage(swiper.activeIndex);
+        });
+
+        function renderPage(slideIndex) {
+          var slide = swiper.slides[slideIndex];
+          var canvas = slide.querySelector("canvas");
+
+          pdfDoc.getPage(slideIndex + 1).then(function (page) {
+            var viewport = page.getViewport({ scale: 1 });
+            var context = canvas.getContext("2d");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            // Renderizar a página
+            page.render({
+              canvasContext: context,
+              viewport: viewport,
+            });
+          });
+        }
+        renderPage(0); // Renderizar a primeira página ao carregar o documento
+      });
+    </script>
+  </body>
+</html>
